@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JUEN - Kho Truyện Đa Nguồn</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #121212; color: #e5e7eb; font-family: system-ui, -apple-system, sans-serif; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .chip { background-color: #2a2a2c; color: #d1d5db; transition: all 0.2s ease; user-select: none; }
+        .chip.active { color: #ffffff; font-weight: bold; }
+        .detail-view { transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .detail-view.open { transform: translateY(0); }
+        .search-container { max-width: 0; opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+        .search-container.open { max-width: 160px; opacity: 1; margin-right: 8px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- HEADER -->
+    <header class="bg-[#181818] px-4 py-3 sticky top-0 z-40 flex items-center justify-between border-b border-[#262626] shadow-md">
+        <div class="flex items-center gap-2 sm:gap-4">
+            <!-- Nhấn giữ logo JUEN 3 giây để kích hoạt bảng đồng bộ dữ liệu ẩn -->
+            <span id="logo-juen" class="text-2xl font-black tracking-wider cursor-pointer select-none" 
+                  mousedown="startSyncTimer()" mouseup="clearSyncTimer()" mouseleave="clearSyncTimer()"
+                  touchstart="startSyncTimer()" touchend="clearSyncTimer()">JUEN</span>
+            
+            <button id="btn-toggle-filter" onclick="toggleFilterPanel()" class="p-2 rounded-xl text-gray-400 hover:bg-[#262626] transition-all duration-200 flex items-center justify-center">
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V5h-2v2H3v2h12z"/></svg>
+            </button>
+
+            <button id="btn-random" onclick="pickRandomStory()" class="p-2 rounded-xl text-gray-400 hover:bg-[#262626] transition-all duration-200 flex items-center justify-center">
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7 9c-1.1 0-2-.9-2-2s.9-2 2-2s2 .9 2 2s-.9 2-2 2zm0 10c-1.1 0-2-.9-2-2s.9-2 2-2s2 .9 2 2s-.9 2-2 2zm5-5c-1.1 0-2-.9-2-2s.9-2 2-2s2 .9 2 2s-.9 2-2 2zm5 5c-1.1 0-2-.9-2-2s.9-2 2-2s2 .9 2 2s-.9 2-2 2zm0-10c-1.1 0-2-.9-2-2s.9-2 2-2s2 .9 2 2s-.9 2-2 2z"/></svg>
+            </button>
+
+            <div class="flex gap-1 bg-[#222] p-0.5 rounded-full border border-[#2d2d2d]">
+                <button onclick="setFilter('sort', 'newest')" id="sort-newest" class="chip text-[11px] font-semibold px-3 py-1 rounded-full transition-all">Cập nhật</button>
+                <button onclick="setFilter('sort', 'az')" id="sort-az" class="chip text-[11px] font-semibold px-3 py-1 rounded-full transition-all">A-Z</button>
+            </div>
+        </div>
+        
+        <div class="flex items-center">
+            <div id="search-wrapper" class="search-container flex items-center">
+                <input type="text" id="search-input" oninput="handleSearchInput()" placeholder="Tìm tên truyện..." class="w-full bg-[#222] text-gray-200 text-xs px-3 py-1.5 rounded-xl border border-[#333] focus:outline-none focus:ring-1 focus:ring-gray-600">
+            </div>
+
+            <button id="btn-search" onclick="toggleSearchBox()" class="p-2 rounded-xl text-gray-400 hover:bg-[#262626] transition-all duration-200 flex items-center justify-center mr-1">
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            </button>
+
+            <div class="flex gap-1.5 bg-[#222] p-1.5 rounded-full border border-[#2d2d2d]">
+                <button onclick="changeTheme('#f59e0b')" class="w-3 h-3 rounded-full bg-[#f59e0b]"></button>
+                <button onclick="changeTheme('#d01884')" class="w-3 h-3 rounded-full bg-[#d01884]"></button>
+                <button onclick="changeTheme('#2563eb')" class="w-3 h-3 rounded-full bg-[#2563eb]"></button>
+                <button onclick="changeTheme('#10b981')" class="w-3 h-3 rounded-full bg-[#10b981]"></button>
+            </div>
+        </div>
+    </header>
+
+    <!-- BẢNG ĐỒNG BỘ ĐỊNH KỲ (ẨN) -->
+    <section id="sync-panel" class="hidden bg-[#1e1b4b] border border-[#4338ca] p-4 max-w-4xl w-full mx-auto mt-2 rounded-2xl text-center">
+        <h3 class="text-sm font-bold text-indigo-200 mb-2">⚙️ KHU VỰC QUẢN TRỊ VIÊN: ĐỒNG BỘ QUÉT DỮ LIỆU</h3>
+        <p class="text-xs text-indigo-300 mb-4">Nhấn nút bên dưới để hệ thống tự động cào quét lại toàn bộ dữ liệu truyện mới nhất.</p>
+        <div class="flex justify-center gap-4">
+            <button onclick="startScrapingProcess()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition">
+                🚀 Bắt đầu quét dữ liệu mới
+            </button>
+            <button onclick="downloadJsonData()" id="btn-download" class="bg-emerald-600 opacity-50 cursor-not-allowed text-white font-bold text-xs px-5 py-2.5 rounded-xl transition" disabled>
+                📥 Tải File data.json mới về máy
+            </button>
+        </div>
+        <div id="sync-status" class="text-xs text-indigo-200 mt-3 font-mono">Trạng thái: Sẵn sàng.</div>
+    </section>
+
+    <!-- BẢNG BỘ LỌC TRUYỆN -->
+    <section id="filter-panel" class="hidden bg-[#18181c] border border-[#2a2a2c] p-4 shadow-2xl max-w-4xl w-full mx-auto mt-2 rounded-2xl flex flex-col gap-4">
+        <!-- Bộ lọc số chương -->
+        <div>
+            <h3 class="text-xs font-black text-gray-400 tracking-wider mb-2 uppercase">SỐ CHƯƠNG</h3>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="setFilter('chapters', 'all')" id="chap-all" class="chip text-xs px-4 py-1.5 rounded-full">Tất cả</button>
+                <button onclick="setFilter('chapters', '<50')" id="chap-50" class="chip text-xs px-4 py-1.5 rounded-full">&lt; 50 chương</button>
+                <button onclick="setFilter('chapters', '<100')" id="chap-100" class="chip text-xs px-4 py-1.5 rounded-full">&lt; 100 chương</button>
+                <button onclick="setFilter('chapters', '100-200')" id="chap-100-200" class="chip text-xs px-4 py-1.5 rounded-full">100 ~ 200</button>
+            </div>
+        </div>
+        <!-- Thể loại muốn tìm -->
+        <div>
+            <h3 class="text-xs font-black text-gray-400 tracking-wider mb-2 uppercase">TAG - MUỐN TÌM</h3>
+            <div id="include-tags-box" class="flex flex-wrap gap-1.5 p-2 bg-[#111113] rounded-xl border border-[#242426]"></div>
+        </div>
+    </section>
+
+    <!-- MAIN GRID CONTAINER -->
+    <main class="max-w-4xl w-full mx-auto p-4 flex-1">
+        <div class="flex justify-between items-center mb-4 px-1 text-xs text-gray-500">
+            <span id="loading-text" class="font-medium">Đang kết nối dữ liệu tĩnh...</span>
+            <span>Tổng số: <span id="story-count" class="font-bold text-gray-300">0</span> bộ</span>
+        </div>
+        <div id="stories-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+    </main>
+
+    <!-- DETAILS MODAL -->
+    <div id="detail-modal" class="detail-view fixed inset-0 z-50 bg-[#121212] overflow-y-auto hidden flex-col">
+        <div class="sticky top-0 bg-[#181818]/90 backdrop-blur px-4 py-3 border-b border-[#262626] flex items-center justify-between">
+            <button onclick="closeDetail()" class="text-gray-400 hover:text-white font-bold text-sm">✕ Đóng xem chi tiết</button>
+        </div>
+        <div class="max-w-xl w-full mx-auto p-5 flex flex-col gap-5">
+            <div class="w-full flex justify-center">
+                <img id="detail-cover" class="w-48 h-auto object-cover rounded-2xl border border-[#2a2a2a]" src="" alt="Bìa">
+            </div>
+            <h2 id="detail-title" class="text-xl font-black text-gray-100"></h2>
+            <div id="detail-summary" class="text-sm text-gray-400 leading-relaxed bg-[#18181c] p-4 rounded-xl border border-[#2a2a2c]"></div>
+            <div id="detail-tags" class="flex flex-wrap gap-1.5"></div>
+            <a id="detail-origin-link" href="#" target="_blank" class="mt-4 w-full text-center py-3 rounded-xl font-bold text-white shadow-md">Đến trang gốc đọc truyện →</a>
+        </div>
+    </div>
+
+    <script>
+        // ======= 🛠️ THAY ĐƯỜNG DẪN LINK RAW GITHUB CỦA CẬU VÀO ĐÂY VÀO ĐÂY =======
+        const GITHUB_DATABASE_URL = 'https://raw.githubusercontent.com/TÊN_GITHUB_CỦA_CẬU/juen-data/main/data.json';
+        const BLOG_URL = 'dammymoihoan.wordpress.com';
+        
+        let originalData = [];
+        let scrapedTemporaryData = []; // Kho chứa tạm khi quét mới dữ liệu
+        let activeThemeColor = '#f59e0b';
+        let filterVisible = false;
+        let searchVisible = false;
+        let searchQuery = '';
+        let logoTimer;
+
+        const ALLOWED_TAGS = ["Cường Cường", "H", "1v1", "HE", "Ấm áp", "Ngọt sủng", "Sinh tử", "Giới giải trí", "Mạt thế", "Vô hạn lưu", "Hài hước", "Đam Mỹ"];
+        let filterConfig = { sort: 'newest', chapters: 'all', includeTags: new Set(), excludeTags: new Set() };
+
+        // 1. TẢI DỮ LIỆU TỪ GITHUB KHI MỞ TRANG (KHÔNG BỊ LỖI, TỐC ĐỘ SIÊU NHANH)
+        async function initializeApp() {
+            const textIndicator = document.getElementById('loading-text');
+            try {
+                const res = await fetch(GITHUB_DATABASE_URL);
+                if (!res.ok) throw new Error("Không thể tải database từ GitHub");
+                originalData = await res.json();
+                
+                if(textIndicator) textIndicator.classList.add('hidden');
+                generateTagsInterface();
+                renderStoriesGrid();
+            } catch (err) {
+                console.error(err);
+                if(textIndicator) textIndicator.innerText = "❌ Lỗi tải kho truyện tĩnh. Vui lòng kiểm tra lại link cấu hình GitHub!";
+            }
+        }
+
+        // 2. CƠ CHẾ ĐỒNG BỘ VÀ CÀO DỮ LIỆU THỦ CÔNG ĐỊNH KỲ
+        function startSyncTimer() {
+            logoTimer = setTimeout(() => {
+                const panel = document.getElementById('sync-panel');
+                panel.classList.toggle('hidden');
+                document.getElementById('sync-status').innerText = "Trạng thái: Đã mở cổng đồng bộ.";
+            }, 3000); // Nhấn giữ logo JUEN trong 3 giây để kích hoạt
+        }
+        function clearSyncTimer() { clearTimeout(logoTimer); }
+
+        async function startScrapingProcess() {
+            const status = document.getElementById('sync-status');
+            scrapedTemporaryData = [];
+            status.innerHTML = "⏳ Bước 1: Đang nạp dữ liệu từ WordPress...";
+            
+            // Cào WordPress
+            let page = 1, keepGoing = true;
+            while(keepGoing && page <= 10) { // Giới hạn quét tối đa 10 trang để tránh nghẽn mạng
+                try {
+                    status.innerHTML = `⏳ Đang quét WordPress trang ${page}...`;
+                    const res = await fetch(`https://public-api.wordpress.com/rest/v1.1/sites/${BLOG_URL}/posts?number=100&page=${page}`);
+                    if(!res.ok) { keepGoing = false; break; }
+                    const json = await res.json();
+                    if(json && json.posts && json.posts.length > 0) {
+                        json.posts.forEach(p => {
+                            let tags = p.tags ? Object.keys(p.tags) : ["Đam Mỹ"];
+                            scrapedTemporaryData.push({
+                                id: `wp-${p.ID}`, title: p.title, link: p.URL,
+                                timestamp: new Date(p.date).getTime(), dateStr: new Date(p.date).toLocaleDateString('vi-VN'),
+                                tags: tags.filter(t => ALLOWED_TAGS.includes(t)),
+                                totalChapters: p.title.match(/hoàn\s*\(?\s*(\d+)\s*chương/i) ? parseInt(p.title.match(/hoàn\s*\(?\s*(\d+)\s*chương/i)[1], 10) : 0,
+                                cover: p.content.match(/<img[^>]+src="([^">]+)"/)?.[1] || '',
+                                summary: 'Bấm xem chi tiết để xem văn án từ trang gốc.'
+                            });
+                        });
+                        page++;
+                    } else { keepGoing = false; }
+                } catch(e) { keepGoing = false; }
+            }
+
+            // Cào TruyenFull thông qua Proxy cứu cánh
+            status.innerHTML = "⏳ Bước 2: Đang kết nối bóc tách TruyenFull...";
+            try {
+                const proxy = 'https://api.allorigins.win/get?url=';
+                const res = await fetch(`${proxy}${encodeURIComponent('https://truyenfull.today')}`);
+                if(res.ok) {
+                    const json = await res.json();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(json.contents, 'text/html');
+                    const items = doc.querySelectorAll('.list-truyen .row, .item');
+                    items.forEach((item, idx) => {
+                        const a = item.querySelector('a');
+                        if(a) {
+                            scrapedTemporaryData.push({
+                                id: `tf-${idx}-${Date.now()}`, title: a.innerText.trim(), link: a.href,
+                                timestamp: Date.now(), dateStr: 'TruyenFull', tags: ["Đam Mỹ"],
+                                totalChapters: 0, cover: item.querySelector('img')?.src || '',
+                                summary: 'Dữ liệu gốc đồng bộ từ hệ thống TruyenFull.'
+                            });
+                        }
+                    });
+                }
+            } catch(e) { console.log("Lỗi cào TruyenFull", e); }
+
+            status.innerHTML = `✅ Đã quét xong! Tổng số thu thập: ${scrapedTemporaryData.length} truyện.`;
+            
+            const dlBtn = document.getElementById('btn-download');
+            dlBtn.disabled = false;
+            dlBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        function downloadJsonData() {
+            if(scrapedTemporaryData.length === 0) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(scrapedTemporaryData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "data.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            
+            document.getElementById('sync-status').innerText = "🎉 Đã tải file thành công! Hãy làm theo Bước 3 hướng dẫn bên dưới để đồng bộ.";
+        }
+
+        // 3. HIỂN THỊ GIAO DIỆN VÀ BỘ LỌC TĨNH
+        function renderStoriesGrid() {
+            const container = document.getElementById('stories-grid');
+            if(!container) return; container.innerHTML = '';
+
+            let processData = originalData.filter(s => {
+                if (searchQuery !== '' && !s.title.toLowerCase().includes(searchQuery)) return false;
+                if(filterConfig.chapters === '<50' && s.totalChapters >= 50) return false;
+                if(filterConfig.includeTags.size > 0 && !Array.from(filterConfig.includeTags).every(t => s.tags.includes(t))) return false;
+                return true;
+            });
+
+            document.getElementById('story-count').innerText = processData.length;
+            processData.forEach(s => {
+                const card = document.createElement('div');
+                card.className = 'bg-[#1e1e1e] rounded-2xl overflow-hidden border border-[#2a2a2a] p-3 cursor-pointer';
+                card.onclick = () => showDetail(s);
+                card.innerHTML = `
+                    <img src="${s.cover || 'https://via.placeholder.com/150'}" class="w-full h-44 object-cover rounded-xl mb-2">
+                    <h4 class="font-bold text-xs line-clamp-2">${s.title}</h4>
+                    <div class="text-[10px] text-gray-500 mt-1">${s.dateStr}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function generateTagsInterface() {
+            const incBox = document.getElementById('include-tags-box');
+            if(!incBox) return; incBox.innerHTML = '';
+            ALLOWED_TAGS.forEach(tag => {
+                const btn = document.createElement('button');
+                btn.className = 'chip text-[11px] px-3 py-1 rounded-full m-0.5';
+                btn.innerText = tag;
+                btn.onclick = () => {
+                    if(filterConfig.includeTags.has(tag)) filterConfig.includeTags.delete(tag);
+                    else filterConfig.includeTags.add(tag);
+                    renderStoriesGrid();
+                };
+                incBox.appendChild(btn);
+            });
+        }
+
+        function showDetail(story) {
+            document.getElementById('detail-title').innerText = story.title;
+            document.getElementById('detail-cover').src = story.cover || 'https://via.placeholder.com/150';
+            document.getElementById('detail-summary').innerText = story.summary;
+            document.getElementById('detail-origin-link').href = story.link;
+            document.getElementById('detail-origin-link').style.backgroundColor = activeThemeColor;
+            document.getElementById('detail-modal').classList.remove('hidden');
+            document.getElementById('detail-modal').classList.add('open');
+        }
+
+        function closeDetail() {
+            document.getElementById('detail-modal').classList.remove('open');
+            setTimeout(() => document.getElementById('detail-modal').classList.add('hidden'), 300);
+        }
+
+        function toggleFilterPanel() {
+            filterVisible = !filterVisible;
+            document.getElementById('filter-panel').classList.toggle('hidden', !filterVisible);
+        }
+
+        function toggleSearchBox() {
+            searchVisible = !searchVisible;
+            document.getElementById('search-wrapper').classList.toggle('open', searchVisible);
+        }
+
+        function handleSearchInput() {
+            searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+            renderStoriesGrid();
+        }
+
+        function changeTheme(color) { activeThemeColor = color; document.getElementById('logo-juen').style.color = color; }
+
+        initializeApp();
+    </script>
+</body>
+</html>
